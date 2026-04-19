@@ -1,0 +1,212 @@
+{# ============================================================
+   Dashboard Page Template
+   Purpose: Overview stats, quick actions, recent visitors
+   ============================================================ #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Admin Dashboard – Visitor Management Overview" />
+  <title>Dashboard – VisitorMS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ╔══════════════════════════════════════╗ -->
+  <!-- ║              NAVBAR                  ║ -->
+  <!-- ╚══════════════════════════════════════╝ -->
+  <nav class="navbar">
+    <!-- Brand -->
+    <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+      <div class="brand-icon">🏢</div>
+      VisitorMS
+    </a>
+
+    <!-- Navigation Links -->
+    <ul class="navbar-nav" id="navMenu">
+      <li>
+        <a class="nav-link active" href="{{ url_for('dashboard') }}">
+          📊 Dashboard
+        </a>
+      </li>
+      <li>
+        <a class="nav-link" href="{{ url_for('index') }}">
+          👥 Visitors
+        </a>
+      </li>
+    </ul>
+
+    <!-- Right Actions -->
+    <div class="navbar-actions">
+      <span class="text-muted text-sm" style="margin-right:8px;">
+        👋 {{ session.get('username', 'Admin') | capitalize }}
+      </span>
+      <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">
+        🚪 <span>Logout</span>
+      </a>
+      <!-- Hamburger (mobile) -->
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+            <span class="alert-dismiss">✕</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ╔══════════════════════════════════════╗ -->
+  <!-- ║           MAIN CONTENT               ║ -->
+  <!-- ╚══════════════════════════════════════╝ -->
+  <main class="main-container">
+
+    <!-- Page Header with Live Clock -->
+    <div class="page-header flex items-center justify-between">
+      <div>
+        <h1>📊 Dashboard</h1>
+        <p>Welcome back! Here's your visitor overview.</p>
+      </div>
+      <div style="text-align:right;">
+        <div class="text-muted text-sm">Current Time</div>
+        <div id="liveClock" style="font-size:1.4rem; font-weight:700; color:var(--accent-2); font-variant-numeric:tabular-nums;">
+          --:--:--
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Statistics Cards ── -->
+    <div class="stats-grid">
+
+      <div class="stat-card">
+        <div class="stat-icon purple">🏘️</div>
+        <div class="stat-info">
+          <div class="stat-value" data-target="{{ total_visitors }}">0</div>
+          <div class="stat-label">Total Visitors</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon blue">📅</div>
+        <div class="stat-info">
+          <div class="stat-value" data-target="{{ today_visitors }}">0</div>
+          <div class="stat-label">Today's Visitors</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">🟢</div>
+        <div class="stat-info">
+          <div class="stat-value" data-target="{{ currently_inside }}">0</div>
+          <div class="stat-label">Currently Inside</div>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orange">🚪</div>
+        <div class="stat-info">
+          <div class="stat-value" data-target="{{ total_exited }}">0</div>
+          <div class="stat-label">Total Exited</div>
+        </div>
+      </div>
+
+    </div><!-- /.stats-grid -->
+
+    <!-- ── Quick Actions ── -->
+    <div class="section-header">
+      <h2>⚡ Quick Actions</h2>
+    </div>
+    <div class="quick-actions">
+      <a href="{{ url_for('index') }}" class="quick-card">
+        <span class="qc-icon">👥</span>
+        <span class="qc-label">View All Visitors</span>
+      </a>
+      <a href="{{ url_for('index') }}" class="quick-card" id="dashAddBtn">
+        <span class="qc-icon">➕</span>
+        <span class="qc-label">Add New Visitor</span>
+      </a>
+      <a href="{{ url_for('export_csv') }}" class="quick-card">
+        <span class="qc-icon">📤</span>
+        <span class="qc-label">Export CSV</span>
+      </a>
+      <a href="{{ url_for('index') }}?status=Inside" class="quick-card">
+        <span class="qc-icon">🟢</span>
+        <span class="qc-label">Inside Visitors</span>
+      </a>
+    </div>
+
+    <!-- ── Recent Visitors Table ── -->
+    <div class="recent-visitors-section card">
+      <div class="section-header mb-4">
+        <h2>🕐 Recent Visitors</h2>
+        <a href="{{ url_for('index') }}" class="btn btn-outline btn-sm">View All →</a>
+      </div>
+
+      {% if recent_visitors %}
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Flat No.</th>
+                <th>Purpose</th>
+                <th>Check-In</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in recent_visitors %}
+              <tr>
+                <td class="text-muted">#{{ v['id'] }}</td>
+                <td><strong>{{ v['name'] }}</strong></td>
+                <td class="text-muted">{{ v['phone'] }}</td>
+                <td>
+                  <span style="background:rgba(124,58,237,0.15); color:var(--accent-2); padding:3px 8px; border-radius:4px; font-weight:600; font-size:0.8rem;">
+                    {{ v['flat_number'] }}
+                  </span>
+                </td>
+                <td class="text-muted">{{ v['purpose'] }}</td>
+                <td class="text-muted text-sm">{{ v['check_in'] }}</td>
+                <td>
+                  {% if v['status'] == 'Inside' %}
+                    <span class="badge badge-inside">
+                      <span class="badge-pulse"></span> Inside
+                    </span>
+                  {% else %}
+                    <span class="badge badge-exited">✓ Exited</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">👤</div>
+          <h3>No Visitors Yet</h3>
+          <p>No visitor records found. Start adding visitors!</p>
+          <a href="{{ url_for('index') }}" class="btn btn-primary mt-4">
+            ➕ Add First Visitor
+          </a>
+        </div>
+      {% endif %}
+    </div>
+
+  </main><!-- /.main-container -->
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,375 @@
+{# ============================================================
+   Visitors Management Page Template
+   Purpose: Full CRUD – list, add, search, checkout, delete
+   ============================================================ #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Manage apartment visitors – VisitorMS" />
+  <title>Visitors – VisitorMS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+  <!-- ╔══════════════════════════════════════╗ -->
+  <!-- ║              NAVBAR                  ║ -->
+  <!-- ╚══════════════════════════════════════╝ -->
+  <nav class="navbar">
+    <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+      <div class="brand-icon">🏢</div>
+      VisitorMS
+    </a>
+
+    <ul class="navbar-nav" id="navMenu">
+      <li><a class="nav-link" href="{{ url_for('dashboard') }}">📊 Dashboard</a></li>
+      <li><a class="nav-link active" href="{{ url_for('index') }}">👥 Visitors</a></li>
+    </ul>
+
+    <div class="navbar-actions">
+      <!-- Add Visitor Button (opens modal) -->
+      <button class="btn btn-primary btn-sm" id="openModalBtn">
+        ➕ <span>Add Visitor</span>
+      </button>
+      <!-- Export CSV -->
+      <a href="{{ url_for('export_csv') }}" class="btn btn-outline btn-sm">
+        📤 <span>Export</span>
+      </a>
+      <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">
+        🚪 <span>Logout</span>
+      </a>
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Toast Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            <span>{{ message }}</span>
+            <span class="alert-dismiss">✕</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- ╔══════════════════════════════════════╗ -->
+  <!-- ║           MAIN CONTENT               ║ -->
+  <!-- ╚══════════════════════════════════════╝ -->
+  <main class="main-container">
+
+    <!-- Page Header -->
+    <div class="page-header flex items-center justify-between">
+      <div>
+        <h1>👥 Visitor Records</h1>
+        <p>Manage all visitor entries, check-ins, and check-outs.</p>
+      </div>
+      <div class="flex gap-2">
+        <button class="btn btn-primary" id="openModalBtn2">➕ Add Visitor</button>
+      </div>
+    </div>
+
+    <!-- ── Search & Filter Bar ── -->
+    <form method="GET" action="{{ url_for('index') }}" id="filterForm">
+      <div class="filter-bar">
+
+        <!-- Search Input -->
+        <div class="search-wrap flex-1">
+          <span class="search-icon">🔍</span>
+          <input
+            type="text"
+            id="searchInput"
+            name="search"
+            class="form-control"
+            placeholder="Search by name, phone, or flat number…"
+            value="{{ search }}"
+          />
+        </div>
+
+        <!-- Status Filter -->
+        <select name="status" class="form-control" style="max-width:180px;" onchange="this.form.submit()">
+          <option value=""        {% if not status_filter %}selected{% endif %}>All Status</option>
+          <option value="Inside"  {% if status_filter == 'Inside' %}selected{% endif %}>🟢 Inside</option>
+          <option value="Exited"  {% if status_filter == 'Exited' %}selected{% endif %}>🔴 Exited</option>
+        </select>
+
+        <!-- Search Submit -->
+        <button type="submit" class="btn btn-primary">Search</button>
+
+        <!-- Clear filters -->
+        {% if search or status_filter %}
+          <a href="{{ url_for('index') }}" class="btn btn-outline">✕ Clear</a>
+        {% endif %}
+
+      </div>
+    </form>
+
+    <!-- ── Visitor Table ── -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+
+      {% if visitors %}
+        <!-- Visitor count info -->
+        <div style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display:flex; align-items:center; justify-content:space-between;">
+          <span class="text-muted text-sm">
+            Showing <strong style="color:var(--text-primary);">{{ visitors|length }}</strong> record(s)
+            {% if search %}for "<em>{{ search }}</em>"{% endif %}
+          </span>
+          <a href="{{ url_for('export_csv') }}" class="btn btn-success btn-sm">
+            📤 Export CSV
+          </a>
+        </div>
+
+        <div class="table-wrapper" style="border:none; border-radius:0;">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Visitor Name</th>
+                <th>Phone</th>
+                <th>Purpose</th>
+                <th>Flat No.</th>
+                <th>Check-In</th>
+                <th>Check-Out</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in visitors %}
+              <tr>
+                <!-- ID -->
+                <td>
+                  <span class="text-muted text-sm">#{{ v['id'] }}</span>
+                </td>
+
+                <!-- Name -->
+                <td>
+                  <div style="font-weight:600;">{{ v['name'] }}</div>
+                </td>
+
+                <!-- Phone -->
+                <td class="text-muted">{{ v['phone'] }}</td>
+
+                <!-- Purpose -->
+                <td class="text-muted">{{ v['purpose'] }}</td>
+
+                <!-- Flat Number -->
+                <td>
+                  <span style="background:rgba(124,58,237,0.15); color:var(--accent-2); padding:3px 10px; border-radius:4px; font-weight:700; font-size:0.82rem;">
+                    {{ v['flat_number'] }}
+                  </span>
+                </td>
+
+                <!-- Check-In -->
+                <td>
+                  <div class="text-sm" style="color:var(--success);">{{ v['check_in'] }}</div>
+                </td>
+
+                <!-- Check-Out -->
+                <td>
+                  {% if v['check_out'] %}
+                    <div class="text-sm text-muted">{{ v['check_out'] }}</div>
+                  {% else %}
+                    <span class="text-muted text-sm">—</span>
+                  {% endif %}
+                </td>
+
+                <!-- Status Badge -->
+                <td>
+                  {% if v['status'] == 'Inside' %}
+                    <span class="badge badge-inside">
+                      <span class="badge-pulse"></span> Inside
+                    </span>
+                  {% else %}
+                    <span class="badge badge-exited">✓ Exited</span>
+                  {% endif %}
+                </td>
+
+                <!-- Action Buttons -->
+                <td>
+                  <div class="td-actions">
+                    <!-- Check-Out Button (only if still inside) -->
+                    {% if v['status'] == 'Inside' %}
+                      <a
+                        href="{{ url_for('checkout', visitor_id=v['id']) }}"
+                        class="btn btn-success btn-sm"
+                        data-confirm="Mark {{ v['name'] }} as Checked Out?"
+                      >
+                        ✅ Checkout
+                      </a>
+                    {% endif %}
+
+                    <!-- Delete Button -->
+                    <a
+                      href="{{ url_for('delete_visitor', visitor_id=v['id']) }}"
+                      class="btn btn-danger btn-sm"
+                      data-confirm="⚠️ Delete visitor {{ v['name'] }}? This action cannot be undone."
+                    >
+                      🗑️ Delete
+                    </a>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+      {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+          <div class="empty-icon">👤</div>
+          <h3>No Visitors Found</h3>
+          {% if search or status_filter %}
+            <p>No records match your search. Try adjusting the filters.</p>
+            <a href="{{ url_for('index') }}" class="btn btn-outline mt-4">Clear Filters</a>
+          {% else %}
+            <p>No visitor records yet. Click "Add Visitor" to get started!</p>
+            <button class="btn btn-primary mt-4" id="emptyAddBtn">➕ Add First Visitor</button>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    </div><!-- /.card -->
+
+  </main><!-- /.main-container -->
+
+
+  <!-- ╔══════════════════════════════════════════════════════╗ -->
+  <!-- ║        ADD VISITOR MODAL                             ║ -->
+  <!-- ╚══════════════════════════════════════════════════════╝ -->
+  <div class="modal-backdrop" id="visitorModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+
+      <div class="modal-header">
+        <h2 id="modalTitle">➕ Add New Visitor</h2>
+        <button class="modal-close" id="closeModalBtn" aria-label="Close modal">✕</button>
+      </div>
+
+      <!-- Visitor Entry Form -->
+      <form
+        id="visitorForm"
+        method="POST"
+        action="{{ url_for('add_visitor') }}"
+        novalidate
+      >
+        <div class="form-grid">
+
+          <!-- Visitor Name -->
+          <div class="form-group">
+            <label class="form-label" for="name">Full Name *</label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              class="form-control"
+              placeholder="e.g. Ravi Kumar"
+              required
+            />
+            <span class="error-msg">Full name is required</span>
+          </div>
+
+          <!-- Phone Number -->
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone Number *</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              class="form-control"
+              placeholder="e.g. 9876543210"
+              maxlength="10"
+              required
+            />
+            <span class="error-msg">Enter valid 10-digit mobile number</span>
+          </div>
+
+          <!-- Flat Number -->
+          <div class="form-group">
+            <label class="form-label" for="flat_number">Flat / Unit Number *</label>
+            <input
+              type="text"
+              id="flat_number"
+              name="flat_number"
+              class="form-control"
+              placeholder="e.g. A-204"
+              required
+            />
+            <span class="error-msg">Flat number is required</span>
+          </div>
+
+          <!-- Purpose of Visit -->
+          <div class="form-group">
+            <label class="form-label" for="purpose">Purpose of Visit *</label>
+            <select id="purpose" name="purpose" class="form-control" required>
+              <option value="" disabled selected>Select purpose…</option>
+              <option value="Guest / Family Visit">👨‍👩‍👧 Guest / Family Visit</option>
+              <option value="Delivery">📦 Delivery</option>
+              <option value="Maintenance / Repair">🔧 Maintenance / Repair</option>
+              <option value="Cab / Driver">🚗 Cab / Driver</option>
+              <option value="Courier">✉️ Courier</option>
+              <option value="Domestic Help">🧹 Domestic Help</option>
+              <option value="Other">🔖 Other</option>
+            </select>
+            <span class="error-msg">Please select a purpose</span>
+          </div>
+
+          <!-- Check-In Date & Time -->
+          <div class="form-group" style="grid-column: span 2;">
+            <label class="form-label" for="check_in">Check-In Date & Time *</label>
+            <input
+              type="datetime-local"
+              id="check_in"
+              name="check_in"
+              class="form-control"
+              required
+            />
+            <span class="error-msg">Check-in time is required</span>
+          </div>
+
+        </div><!-- /.form-grid -->
+
+        <!-- Form Action Buttons -->
+        <div class="form-actions" style="margin-top:1.5rem;">
+          <button type="submit" class="btn btn-primary">
+            ✅ Save Visitor
+          </button>
+          <button type="button" class="btn btn-outline" id="cancelModalBtn">
+            Cancel
+          </button>
+        </div>
+
+      </form>
+    </div><!-- /.modal-box -->
+  </div><!-- /.modal-backdrop -->
+
+
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script>
+    // ── Allow the "Add Visitor" button in page header to also open modal ──
+    const openBtn2 = document.getElementById('openModalBtn2');
+    if (openBtn2) {
+      openBtn2.addEventListener('click', () => {
+        document.getElementById('visitorModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+      });
+    }
+
+    // ── Empty state "Add First Visitor" button ──
+    const emptyAddBtn = document.getElementById('emptyAddBtn');
+    if (emptyAddBtn) {
+      emptyAddBtn.addEventListener('click', () => {
+        document.getElementById('visitorModal').classList.add('show');
+        document.body.style.overflow = 'hidden';
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{# ============================================================
+   Login Page Template
+   Purpose: Admin authentication page
+   ============================================================ #}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Login to Apartment Visitor Management System" />
+  <title>Login – VisitorMS</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+  <!-- Phosphor Icons (lightweight, free icon set) -->
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js" defer></script>
+</head>
+<body>
+
+  <!-- Animated Background Orbs -->
+  <div class="login-page">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
+    <!-- Login Card -->
+    <div class="login-box">
+
+      <!-- Logo / Branding -->
+      <div class="login-logo">
+        <div class="logo-icon">🏢</div>
+        <h1>VisitorMS</h1>
+        <p>Apartment Visitor Management System</p>
+      </div>
+
+      {# ── Flash Messages ── #}
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-container" style="position:static; margin-bottom:1rem; max-width:100%;">
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}" style="animation: popIn 0.4s ease;">
+                <span>{{ message }}</span>
+                <span class="alert-dismiss">✕</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <!-- Login Form -->
+      <form class="login-form" method="POST" action="{{ url_for('login') }}">
+
+        <!-- Username Field -->
+        <div class="form-group">
+          <label class="form-label" for="username">Username</label>
+          <div class="input-icon-wrap">
+            <span class="icon">👤</span>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              class="form-control"
+              placeholder="Enter admin username"
+              autocomplete="username"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label class="form-label" for="password">Password</label>
+          <div class="input-icon-wrap">
+            <span class="icon">🔒</span>
+            <input
+              type="password"
+              id="password"
+              name="password"
+              class="form-control"
+              placeholder="Enter password"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn btn-primary btn-lg login-btn" id="loginBtn">
+          🚀 Sign In
+        </button>
+      </form>
+
+      <!-- Default Credentials Hint (Remove in production!) -->
+      <div class="login-hint">
+        Default credentials: <code>admin</code> / <code>admin123</code>
+      </div>
+
+    </div><!-- /.login-box -->
+  </div><!-- /.login-page -->
+
+  <!-- Flash messages + form submit JS -->
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <script>
+    // Add loading state to login button on submit
+    document.querySelector('.login-form').addEventListener('submit', function() {
+      const btn = document.getElementById('loginBtn');
+      btn.textContent = '⏳ Signing in...';
+      btn.disabled = true;
+    });
+  </script>
+</body>
+</html>
